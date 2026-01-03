@@ -6,6 +6,7 @@ set -e
 
 SERVICE_NAME="mqtt-chalet"
 PROJECT_DIR="/home/pi/MQTT-chalet"
+VENV_DIR="${PROJECT_DIR}/venv"
 LOG_DIR="/var/log/MQTT-chalet"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
@@ -19,21 +20,21 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Check if pip3 is installed, if not install it
-if ! command -v pip3 &> /dev/null; then
-    echo "pip3 not found, installing python3-pip..."
-    apt-get update -qq
-    apt-get install -y python3-pip
-    if [ $? -ne 0 ]; then
-        echo "✗ Failed to install python3-pip"
+# Create virtual environment if it doesn't exist
+if [ ! -d "${VENV_DIR}" ]; then
+    echo "Creating Python virtual environment..."
+    sudo -u pi python3 -m venv "${VENV_DIR}"
+    if [ $? -eq 0 ]; then
+        echo "✓ Virtual environment created successfully"
+    else
+        echo "✗ Failed to create virtual environment"
         exit 1
     fi
-    echo "✓ python3-pip installed successfully"
 fi
 
-# Install Python dependencies
+# Install Python dependencies in virtual environment
 echo "Installing Python dependencies from requirements.txt..."
-pip3 install -q -r "${PROJECT_DIR}/requirements.txt"
+sudo -u pi "${VENV_DIR}/bin/pip" install -q -r "${PROJECT_DIR}/requirements.txt"
 if [ $? -eq 0 ]; then
     echo "✓ Python packages installed successfully"
 else
