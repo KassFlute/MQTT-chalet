@@ -1,0 +1,18 @@
+[Unit]
+Description=MQTT Chalet - DHT11 & RF Relay Controller
+After=network.target mosquitto.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mqtt-chalet
+ExecStart=/usr/bin/python3 /home/pi/mqtt-chalet/main.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/mqtt-chalet/output.log
+StandardError=append:/var/log/mqtt-chalet/error.log
+SyslogIdentifier=mqtt-chalet
+
+[Install]
+WantedBy=multi-user.target
