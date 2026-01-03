@@ -81,10 +81,10 @@ class RFRelay:
         self._init_device()
         if state.lower() == "on":
             self.rfdevice.tx_code(on_code)
-            logger.info(f"Relay '{relay_name}' turned ON (code: {on_code})")
+            logger.debug(f"Relay '{relay_name}' turned ON (code: {on_code})")
         elif state.lower() == "off":
             self.rfdevice.tx_code(off_code)
-            logger.info(f"Relay '{relay_name}' turned OFF (code: {off_code})")
+            logger.debug(f"Relay '{relay_name}' turned OFF (code: {off_code})")
         else:
             logger.error(f"Invalid state '{state}'. Use 'on' or 'off'")
 
