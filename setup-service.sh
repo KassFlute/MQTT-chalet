@@ -1,12 +1,12 @@
 #!/bin/bash
-# Setup script for mqtt-chalet systemd service
+# Setup script for MQTT-chalet systemd service
 # Run this with sudo on the Raspberry Pi
 
 set -e
 
 SERVICE_NAME="mqtt-chalet"
-PROJECT_DIR="/home/pi/mqtt-chalet"
-LOG_DIR="/var/log/mqtt-chalet"
+PROJECT_DIR="/home/pi/MQTT-chalet"
+LOG_DIR="/var/log/MQTT-chalet"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "=========================================="

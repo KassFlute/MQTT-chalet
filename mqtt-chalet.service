@@ -6,13 +6,13 @@ Wants=mosquitto.service
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/mqtt-chalet
-ExecStart=/usr/bin/python3 /home/pi/mqtt-chalet/main.py
+WorkingDirectory=/home/pi/MQTT-chalet
+ExecStart=/usr/bin/python3 /home/pi/MQTT-chalet/main.py
 Restart=on-failure
 RestartSec=10
-StandardOutput=append:/var/log/mqtt-chalet/output.log
-StandardError=append:/var/log/mqtt-chalet/error.log
-SyslogIdentifier=mqtt-chalet
+StandardOutput=append:/var/log/MQTT-chalet/output.log
+StandardError=append:/var/log/MQTT-chalet/error.log
+SyslogIdentifier=MQTT-chalet
 
 [Install]
 WantedBy=multi-user.target
