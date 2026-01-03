@@ -11,7 +11,6 @@ SERVICE_HOME="/home/${SERVICE_USER}"
 SERVICE_NAME="mqtt-chalet"
 PROJECT_DIR="${SERVICE_HOME}/MQTT-chalet"
 VENV_DIR="${PROJECT_DIR}/venv"
-LOG_DIR="/var/log/MQTT-chalet"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "=========================================="
@@ -55,12 +54,6 @@ else
     exit 1
 fi
 
-# Create log directory
-echo "Creating log directory: ${LOG_DIR}"
-mkdir -p "${LOG_DIR}"
-chown "${SERVICE_USER}:${SERVICE_USER}" "${LOG_DIR}"
-chmod 755 "${LOG_DIR}"
-
 # Generate service file from template with detected user
 echo "Generating service file..."
 cat > "${SERVICE_FILE}" << EOF
@@ -76,8 +69,8 @@ WorkingDirectory=${PROJECT_DIR}
 ExecStart=${VENV_DIR}/bin/python3 ${PROJECT_DIR}/main.py
 Restart=on-failure
 RestartSec=10
-StandardOutput=append:${LOG_DIR}/output.log
-StandardError=append:${LOG_DIR}/error.log
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=${SERVICE_NAME}
 
 [Install]
@@ -102,9 +95,7 @@ echo "  sudo systemctl stop ${SERVICE_NAME}       # Stop the service"
 echo "  sudo systemctl restart ${SERVICE_NAME}    # Restart the service"
 echo "  sudo systemctl enable ${SERVICE_NAME}     # Enable on system startup"
 echo "  sudo systemctl disable ${SERVICE_NAME}    # Disable on system startup"
-echo "  sudo systemctl status ${SERVICE_NAME}     # Check service status"
+echo "  sudo systemctl status ${SERVICE_NAME}     # Check service status (shows recent logs)"
 echo "  journalctl -u ${SERVICE_NAME} -f          # View live logs"
-echo "  tail -f ${LOG_DIR}/output.log             # View application output logs"
-echo "  tail -f ${LOG_DIR}/error.log              # View error logs"
+echo "  journalctl -u ${SERVICE_NAME} -n 100      # View last 100 log lines"
 echo ""
-
