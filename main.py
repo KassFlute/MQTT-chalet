@@ -127,6 +127,7 @@ mqttc.loop_start()
 # MAIN LOOP
 # ============================================================================
 
+time.sleep(2)
 try:
     logger.info("Application started successfully")
     while True:
