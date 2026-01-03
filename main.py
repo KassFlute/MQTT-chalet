@@ -137,7 +137,7 @@ try:
             logger.warning("No temperature reading available; skipping publish")
         else:
             mqttc.publish(TEMP_TOPIC, f"{temp:.2f}", retain=True)
-            logger.info(f"Published temperature: {temp:.2f} °C")
+            logger.debug(f"Published temperature: {temp:.2f} °C")
         
         time.sleep(60)
 

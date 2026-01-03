@@ -55,12 +55,12 @@ class DHT11Reader:
         for attempt in range(retries):
             temp, hum = self.read()
             if temp is not None and hum is not None:
-                logger.info(f"Good reading after {attempt + 1} attempt(s): {temp:.2f}°C, {hum:.1f}%")
+                logger.debug(f"Good reading after {attempt + 1} attempt(s): {temp:.2f}°C, {hum:.1f}%")
                 return temp, hum
             time.sleep(delay)
         
         # If all retries failed, return the last known valid reading
-        logger.warning(f"All {retries} read attempts failed, returning cached values: {self.last_valid}")
+        logger.debug(f"All {retries} read attempts failed, returning cached values: {self.last_valid}")
         return self.last_valid
 
     def cleanup(self):
