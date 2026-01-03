@@ -4,8 +4,12 @@
 
 set -e
 
+# Auto-detect the service user (the user running sudo, or current user if not sudo)
+SERVICE_USER="${SUDO_USER:-$(whoami)}"
+SERVICE_HOME="/home/${SERVICE_USER}"
+
 SERVICE_NAME="mqtt-chalet"
-PROJECT_DIR="/home/pi/MQTT-chalet"
+PROJECT_DIR="${SERVICE_HOME}/MQTT-chalet"
 VENV_DIR="${PROJECT_DIR}/venv"
 LOG_DIR="/var/log/MQTT-chalet"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
@@ -13,6 +17,9 @@ SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 echo "=========================================="
 echo "Setting up ${SERVICE_NAME} systemd service"
 echo "=========================================="
+echo "Service user: ${SERVICE_USER}"
+echo "Project directory: ${PROJECT_DIR}"
+echo ""
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -20,10 +27,16 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# Check if the service user exists
+if ! id "${SERVICE_USER}" &>/dev/null; then
+    echo "✗ User '${SERVICE_USER}' does not exist"
+    exit 1
+fi
+
 # Create virtual environment if it doesn't exist
 if [ ! -d "${VENV_DIR}" ]; then
     echo "Creating Python virtual environment..."
-    sudo -u pi python3 -m venv "${VENV_DIR}"
+    sudo -u "${SERVICE_USER}" python3 -m venv "${VENV_DIR}"
     if [ $? -eq 0 ]; then
         echo "✓ Virtual environment created successfully"
     else
@@ -34,7 +47,7 @@ fi
 
 # Install Python dependencies in virtual environment
 echo "Installing Python dependencies from requirements.txt..."
-sudo -u pi "${VENV_DIR}/bin/pip" install -q -r "${PROJECT_DIR}/requirements.txt"
+sudo -u "${SERVICE_USER}" "${VENV_DIR}/bin/pip" install -q -r "${PROJECT_DIR}/requirements.txt"
 if [ $? -eq 0 ]; then
     echo "✓ Python packages installed successfully"
 else
@@ -45,12 +58,32 @@ fi
 # Create log directory
 echo "Creating log directory: ${LOG_DIR}"
 mkdir -p "${LOG_DIR}"
-chown pi:pi "${LOG_DIR}"
+chown "${SERVICE_USER}:${SERVICE_USER}" "${LOG_DIR}"
 chmod 755 "${LOG_DIR}"
 
-# Copy service file
-echo "Installing service file to ${SERVICE_FILE}"
-cp "${PROJECT_DIR}/${SERVICE_NAME}.service" "${SERVICE_FILE}"
+# Generate service file from template with detected user
+echo "Generating service file..."
+cat > "${SERVICE_FILE}" << EOF
+[Unit]
+Description=MQTT Chalet - DHT11 & RF Relay Controller
+After=network.target mosquitto.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+WorkingDirectory=${PROJECT_DIR}
+ExecStart=${VENV_DIR}/bin/python3 ${PROJECT_DIR}/main.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:${LOG_DIR}/output.log
+StandardError=append:${LOG_DIR}/error.log
+SyslogIdentifier=${SERVICE_NAME}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 chown root:root "${SERVICE_FILE}"
 chmod 644 "${SERVICE_FILE}"
 
