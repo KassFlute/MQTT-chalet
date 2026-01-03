@@ -1,0 +1,4 @@
+paho-mqtt>=1.6.1
+rpi-rf>=0.0.12
+RPi.GPIO>=0.7.0
+dht11>=0.0.9
