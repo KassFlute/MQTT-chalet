@@ -22,8 +22,8 @@ Remote control system for my chalet's heater. The chalet has no internet connect
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/mqtt-chalet.git
-cd mqtt-chalet
+git clone https://github.com/KassFlute/MQTT-chalet.git
+cd MQTT-chalet
 
 # Configure settings
 cp config.example.py config.py
