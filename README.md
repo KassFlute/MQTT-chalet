@@ -46,13 +46,14 @@ sudo tailscale set --exit-node=<exit-node-ip>
 # Run setup script (installs dependencies and systemd service)
 sudo bash setup-service.sh
 
-# Enable and start the service
-chmod +x manage-service.sh
-./manage-service.sh enable
-./manage-service.sh start
+# Enable service to start on boot
+sudo systemctl enable mqtt-chalet
+
+# Start the service
+sudo systemctl start mqtt-chalet
 
 # Check status
-./manage-service.sh status
+sudo systemctl status mqtt-chalet
 ```
 
 ## Configuration
@@ -91,11 +92,11 @@ mqtt:
 ## Managing the Service
 
 ```bash
-./manage-service.sh start    # Start service
-./manage-service.sh stop     # Stop service
-./manage-service.sh restart  # Restart service
-./manage-service.sh logs     # View logs
-./manage-service.sh status   # Check status
+sudo systemctl start mqtt-chalet    # Start service
+sudo systemctl stop mqtt-chalet     # Stop service
+sudo systemctl restart mqtt-chalet  # Restart service
+sudo systemctl status mqtt-chalet   # Check status
+sudo journalctl -u mqtt-chalet -f   # View live logs
 ```
 
 ## Troubleshooting
@@ -106,4 +107,4 @@ mqtt:
 
 **Sensor not working?**
 - Verify wiring and GPIO pins in `config.py`
-- Check logs: `./manage-service.sh logs`
+- Check logs: `sudo journalctl -u mqtt-chalet -f`
