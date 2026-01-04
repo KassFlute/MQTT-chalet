@@ -133,12 +133,19 @@ try:
     while True:
         with reading_lock:
             temp = latest_reading["temp"]
+            humidity = latest_reading["hum"]
         
         if temp is None:
             logger.warning("No temperature reading available; skipping publish")
         else:
             mqttc.publish(TEMP_TOPIC, f"{temp:.2f}", retain=True)
             logger.debug(f"Published temperature: {temp:.2f} °C")
+        
+        if humidity is None:
+            logger.warning("No humidity reading available; skipping publish")
+        else:
+            mqttc.publish(config.HUMIDITY_TOPIC, f"{humidity:.1f}", retain=True)
+            logger.debug(f"Published humidity: {humidity:.1f} %")
         
         time.sleep(60)
 
