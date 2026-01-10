@@ -5,12 +5,12 @@ Remote control system for my chalet's heater. The chalet has no internet connect
 ## What It Does
 
 - **Remote heater control** via 433MHz RF relay - turn heating on/off from anywhere at anytime
-- **Temperature monitoring** via DHT11 sensor
+- **Temperature (and Humidity) monitoring** via DHT11 sensor
 - **Works with celluar connectivity** to work where no internet line is present
 
 ## Hardware Needed
 
-- Raspberry Pi (with 4G/LTE USB modem + data capable SIM)
+- Raspberry Pi (with 4G/LTE USB modem (like Huawei E3372-325) + data capable SIM)
 - DHT11 temperature/humidity sensor
 - 433MHz RF transmitter
 - 433MHz RF controlled relay
@@ -24,23 +24,28 @@ Remote control system for my chalet's heater. The chalet has no internet connect
 # Clone the repo
 git clone https://github.com/KassFlute/MQTT-chalet.git
 cd MQTT-chalet
-
-# Configure settings
-cp config.example.py config.py
-nano config.py  # Update MQTT host (Tailscale IP), credentials, and GPIO pins
 ```
 
-### 2. Install Tailscale
+## Configuration
 
-Install and run Tailscale on the Raspberry Pi using exit node to have access to the MQTT broker in the exit node's network:
+Edit `config.py` with your settings:
+
+```python
+MQTT_HOST = "100.x.x.x"  # MQTT broker's IP running on tailscale exit node's network
+MQTT_USER = "your_user"
+MQTT_PASS = "your_pass"
+DHT11_PIN = 12  # GPIO pin for sensor
+RF_PIN = 18     # GPIO pin for RF transmitter
+```
+
+First, copy the example config and update it with your settings:
 
 ```bash
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-sudo tailscale set --exit-node=<exit-node-ip>
+cp config.example.py config.py
+nano config.py  # Update MQTT host, credentials, and GPIO pins
 ```
 
-### 3. Install and Run
+### 2. Install and Run
 
 ```bash
 # Run setup script (installs dependencies and systemd service)
@@ -56,16 +61,15 @@ sudo systemctl start mqtt-chalet
 sudo systemctl status mqtt-chalet
 ```
 
-## Configuration
+## Tailscale Setup
 
-Edit `config.py` with your settings:
+In order for the Raspberry Pi to communicate with the MQTT broker easily, I use tailscale with a subnet containing the broker adverstised at my home. 
 
-```python
-MQTT_HOST = "100.x.x.x"  # MQTT broker's IP running on tailscale exit node's network
-MQTT_USER = "your_user"
-MQTT_PASS = "your_pass"
-DHT11_PIN = 12  # GPIO pin for sensor
-RF_PIN = 18     # GPIO pin for RF transmitter
+Install and run Tailscale on the Raspberry Pi allowing routes:
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+sudo tailscale set --accept-routes
 ```
 
 ## Home Assistant Integration
@@ -91,6 +95,8 @@ mqtt:
 
 ## Managing the Service
 
+After installation, the service is managed like a normal linux service:
+
 ```bash
 sudo systemctl start mqtt-chalet    # Start service
 sudo systemctl stop mqtt-chalet     # Stop service
@@ -103,8 +109,12 @@ sudo journalctl -u mqtt-chalet -f   # View live logs
 
 **Can't connect to MQTT?**
 - Check Tailscale: `sudo tailscale status`
-- Test connectivity: `ping <mqtt-broker-tailscale-ip>`
+- Test connectivity to MQTT broker: `ping <mqtt-broker-tailscale-ip>`
 
-**Sensor not working?**
+**Sensor or relay not working?**
 - Verify wiring and GPIO pins in `config.py`
 - Check logs: `sudo journalctl -u mqtt-chalet -f`
+- DHT11 sensors can be broken or wrong
+- DHT11 sensors don't go bellow 0 degree
+- Check Raspberry Pi power supply amps (smartphone chargers often lie)
+- Test with relay really close to emitter to aliminate poor signal or broken antenna
