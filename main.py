@@ -61,12 +61,12 @@ def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
         logger.error(f"Unexpected disconnection from MQTT broker (reason code: {reason_code})")
 
 
-def on_socket_connect_fail(client, userdata):
+def on_socket_connect_fail(client, userdata, sock):
     """Called when a socket connection attempt fails."""
     logger.error("Failed to establish socket connection to MQTT broker")
 
 
-def on_socket_close(client, userdata):
+def on_socket_close(client, userdata, sock):
     """Called when a socket is closed."""
     logger.warning("Socket connection to MQTT broker closed")
 
