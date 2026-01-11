@@ -71,6 +71,25 @@ def on_socket_close(client, userdata, sock):
     logger.warning("Socket connection to MQTT broker closed")
 
 
+def handle_relay_command(payload):
+    """Handle relay command in a separate thread to avoid blocking MQTT callback."""
+    # Process the command
+    if payload == "on":
+        success = rf_relay.on("mazout_outlet")
+        if success:
+            logger.info("Relay turned ON from MQTT")
+        else:
+            logger.error("Failed to turn relay ON from MQTT")
+            mqttc.publish(RELAY_GET_TOPIC, "OFF", retain=True)  # Revert state on failure
+    elif payload == "off":
+        success = rf_relay.off("mazout_outlet")
+        if success:
+            logger.info("Relay turned OFF from MQTT")
+        else:
+            logger.error("Failed to turn relay OFF from MQTT")
+            mqttc.publish(RELAY_GET_TOPIC, "ON", retain=True)  # Revert state on failure
+
+
 def on_message(client, userdata, msg):
     """Called when a message is received on a subscribed topic."""
     logger.debug(f"Message received on {msg.topic}: {msg.payload.decode('utf-8')}")
@@ -78,7 +97,12 @@ def on_message(client, userdata, msg):
     if msg.topic == RELAY_SET_TOPIC:
         payload = msg.payload.decode("utf-8").lower()
         
-        # Check cooldown
+        # Validate command first
+        if payload not in ["on", "off"]:
+            logger.warning(f"Unknown relay command: {payload}")
+            return
+        
+        # Check cooldown before doing anything
         with relay_lock:
             current_time = time.time()
             if current_time - last_relay_switch[0] < RELAY_COOLDOWN:
@@ -89,30 +113,15 @@ def on_message(client, userdata, msg):
                 )
                 return
             
-            # Publish state change to MQTT first
-            client.publish(RELAY_GET_TOPIC, "ON" if payload == "on" else "OFF", retain=True)
-            
-            # Process the command
-            if payload == "on":
-                success = rf_relay.on("mazout_outlet")
-                if success:
-                    logger.info("Relay turned ON from MQTT")
-                else:
-                    logger.error("Failed to turn relay ON from MQTT")
-                    client.publish(RELAY_GET_TOPIC, "OFF", retain=True)  # Revert state on failure
-            elif payload == "off":
-                success = rf_relay.off("mazout_outlet")
-                if success:
-                    logger.info("Relay turned OFF from MQTT")
-                else:
-                    logger.error("Failed to turn relay OFF from MQTT")
-                    client.publish(RELAY_GET_TOPIC, "ON", retain=True)  # Revert state on failure
-            else:
-                logger.warning(f"Unknown relay command: {payload}")
-                return
-            
             # Update last switch time
             last_relay_switch[0] = current_time
+        
+        # Publish state change immediately for fast feedback
+        client.publish(RELAY_GET_TOPIC, "ON" if payload == "on" else "OFF", retain=True)
+        
+        # Handle RF command in a separate thread so callback returns quickly
+        relay_thread = threading.Thread(target=handle_relay_command, args=(payload,), daemon=True)
+        relay_thread.start()
 
 # ============================================================================
 # SENSOR WORKER THREAD
