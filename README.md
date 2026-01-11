@@ -31,7 +31,7 @@ cd MQTT-chalet
 Edit `config.py` with your settings:
 
 ```python
-MQTT_HOST = "100.x.x.x"  # MQTT broker's IP running on tailscale exit node's network
+MQTT_HOST = "100.x.x.x"  # MQTT broker's tailscale IP
 MQTT_USER = "your_user"
 MQTT_PASS = "your_pass"
 DHT11_PIN = 12  # GPIO pin for sensor
@@ -63,13 +63,13 @@ sudo systemctl status mqtt-chalet
 
 ## Tailscale Setup
 
-In order for the Raspberry Pi to communicate with the MQTT broker easily, I use tailscale with a subnet containing the broker adverstised at my home. 
+In order for the Raspberry Pi to communicate with the MQTT broker without exposing my broker to the internet I use tailscale.
+Tailscale also needs to run on the MQTT broker
 
-Install and run Tailscale on the Raspberry Pi allowing routes:
+Install and run Tailscale on the Raspberry Pi:
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
-sudo tailscale set --accept-routes
 ```
 
 ## Home Assistant Integration
