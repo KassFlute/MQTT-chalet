@@ -77,12 +77,32 @@ def on_message(client, userdata, msg):
     
     if msg.topic == RELAY_SET_TOPIC:
         payload = msg.payload.decode("utf-8").lower()
-        if payload == "on":
-            rf_relay.on("mazout_outlet")
-            logger.info("Relay turned ON from MQTT")
-        elif payload == "off":
-            rf_relay.off("mazout_outlet")
-            logger.info("Relay turned OFF from MQTT")
+        
+        # Check cooldown
+        with relay_lock:
+            current_time = time.time()
+            if current_time - last_relay_switch[0] < RELAY_COOLDOWN:
+                cooldown_remaining = RELAY_COOLDOWN - (current_time - last_relay_switch[0])
+                logger.warning(
+                    f"Relay command ignored due to cooldown. "
+                    f"Please wait {cooldown_remaining:.1f} more seconds."
+                )
+                return
+            
+            # Process the command
+            if payload == "on":
+                rf_relay.on("mazout_outlet")
+                logger.info("Relay turned ON from MQTT")
+            elif payload == "off":
+                rf_relay.off("mazout_outlet")
+                logger.info("Relay turned OFF from MQTT")
+            else:
+                logger.warning(f"Unknown relay command: {payload}")
+                return
+            
+            # Update last switch time
+            last_relay_switch[0] = current_time
+        
         client.publish(RELAY_GET_TOPIC, "ON" if payload == "on" else "OFF", retain=True)
 
 # ============================================================================
@@ -108,10 +128,15 @@ def sensor_worker(poll_interval_seconds=5):
 # INITIALIZATION
 # ============================================================================
 
+# Relay cooldown configuration
+RELAY_COOLDOWN = 5.0  # seconds
+
 # Setup states
 latest_reading: Dict[str, Optional[float]] = {"temp": None, "hum": None}
 reading_lock = threading.Lock()
 stop_event = threading.Event()
+relay_lock = threading.Lock()
+last_relay_switch = [0.0]  # Use list to allow modification in nested scope
 
 # Set up MQTT client
 logger.info("Setting up MQTT client...")
