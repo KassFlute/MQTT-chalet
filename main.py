@@ -46,8 +46,29 @@ RF_PIN = config.RF_PIN
 
 def on_connect(client, userdata, flags, reason_code, properties):
     """Called when the client connects to the broker."""
-    logger.info(f"Connected to MQTT broker with result code: {reason_code}")
-    client.subscribe(RELAY_SET_TOPIC)
+    if reason_code == 0:
+        logger.info(f"Connected to MQTT broker successfully (result code: {reason_code})")
+        client.subscribe(RELAY_SET_TOPIC)
+    else:
+        logger.error(f"Failed to connect to MQTT broker with result code: {reason_code}")
+
+
+def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
+    """Called when the client disconnects from the broker."""
+    if reason_code == 0:
+        logger.info(f"Disconnected from MQTT broker (reason code: {reason_code})")
+    else:
+        logger.error(f"Unexpected disconnection from MQTT broker (reason code: {reason_code})")
+
+
+def on_socket_connect_fail(client, userdata):
+    """Called when a socket connection attempt fails."""
+    logger.error("Failed to establish socket connection to MQTT broker")
+
+
+def on_socket_close(client, userdata):
+    """Called when a socket is closed."""
+    logger.warning("Socket connection to MQTT broker closed")
 
 
 def on_message(client, userdata, msg):
@@ -96,9 +117,18 @@ stop_event = threading.Event()
 logger.info("Setting up MQTT client...")
 mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
+mqttc.on_disconnect = on_disconnect
+mqttc.on_socket_connect_fail = on_socket_connect_fail
+mqttc.on_socket_close = on_socket_close
 mqttc.on_message = on_message
 mqttc.username_pw_set(MQTT_USER, MQTT_PASS)
-mqttc.connect(MQTT_HOST, MQTT_PORT, 60)
+
+try:
+    logger.info(f"Attempting to connect to MQTT broker at {MQTT_HOST}:{MQTT_PORT}...")
+    mqttc.connect(MQTT_HOST, MQTT_PORT, 60)
+except OSError as e:
+    logger.error(f"Failed to connect to MQTT broker: {e}")
+    raise
 
 # Setup DHT11
 logger.info("Initializing DHT11 sensor...")
