@@ -73,38 +73,46 @@ class RFRelay:
         Args:
             relay_name: Name of the relay to control
             state: "on" or "off"
+            
+        Returns:
+            True if command was sent successfully, False otherwise
         """
         if relay_name not in self.relays:
             logger.error(f"Relay '{relay_name}' not found in configured relays")
-            return
+            return False
 
         on_code = self.relays[relay_name]
         off_code = on_code + 1
 
-        self._init_device()
-        
-        code = on_code if state.lower() == "on" else off_code
-        state_str = "ON" if state.lower() == "on" else "OFF"
-        
-        # Send the code multiple times for better reliability
-        for attempt in range(self.NUM_TRANSMISSIONS):
-            self.rfdevice.tx_code(code, self.PROTOCOL, self.PULSE_LENGTH, self.CODE_LENGTH)
-            logger.debug(f"Relay '{relay_name}' transmission {attempt + 1}/{self.NUM_TRANSMISSIONS} ({state_str}, code: {code})")
+        try:
+            self._init_device()
             
-            # Add delay between transmissions (except after the last one)
-            if attempt < self.NUM_TRANSMISSIONS - 1:
-                time.sleep(self.TRANSMISSION_DELAY)
-        
-        logger.info(f"Relay '{relay_name}' turned {state_str} (code: {code})")
+            code = on_code if state.lower() == "on" else off_code
+            state_str = "ON" if state.lower() == "on" else "OFF"
+            
+            # Send the code multiple times for better reliability
+            for attempt in range(self.NUM_TRANSMISSIONS):
+                self.rfdevice.tx_code(code, self.PROTOCOL, self.PULSE_LENGTH, self.CODE_LENGTH)
+                logger.debug(f"Relay '{relay_name}' transmission {attempt + 1}/{self.NUM_TRANSMISSIONS} ({state_str}, code: {code})")
+                
+                # Add delay between transmissions (except after the last one)
+                if attempt < self.NUM_TRANSMISSIONS - 1:
+                    time.sleep(self.TRANSMISSION_DELAY)
+            
+            logger.info(f"Relay '{relay_name}' turned {state_str} (code: {code})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to control relay '{relay_name}': {e}")
+            return False
 
 
     def on(self, relay_name):
-        """Turn a relay ON."""
-        self.control(relay_name, "on")
+        """Turn a relay ON. Returns True if successful, False otherwise."""
+        return self.control(relay_name, "on")
 
     def off(self, relay_name):
-        """Turn a relay OFF."""
-        self.control(relay_name, "off")
+        """Turn a relay OFF. Returns True if successful, False otherwise."""
+        return self.control(relay_name, "off")
 
     def cleanup(self):
         """Clean up all resources."""

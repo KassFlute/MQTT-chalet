@@ -89,21 +89,30 @@ def on_message(client, userdata, msg):
                 )
                 return
             
+            # Publish state change to MQTT first
+            client.publish(RELAY_GET_TOPIC, "ON" if payload == "on" else "OFF", retain=True)
+            
             # Process the command
             if payload == "on":
-                rf_relay.on("mazout_outlet")
-                logger.info("Relay turned ON from MQTT")
+                success = rf_relay.on("mazout_outlet")
+                if success:
+                    logger.info("Relay turned ON from MQTT")
+                else:
+                    logger.error("Failed to turn relay ON from MQTT")
+                    client.publish(RELAY_GET_TOPIC, "OFF", retain=True)  # Revert state on failure
             elif payload == "off":
-                rf_relay.off("mazout_outlet")
-                logger.info("Relay turned OFF from MQTT")
+                success = rf_relay.off("mazout_outlet")
+                if success:
+                    logger.info("Relay turned OFF from MQTT")
+                else:
+                    logger.error("Failed to turn relay OFF from MQTT")
+                    client.publish(RELAY_GET_TOPIC, "ON", retain=True)  # Revert state on failure
             else:
                 logger.warning(f"Unknown relay command: {payload}")
                 return
             
             # Update last switch time
             last_relay_switch[0] = current_time
-        
-        client.publish(RELAY_GET_TOPIC, "ON" if payload == "on" else "OFF", retain=True)
 
 # ============================================================================
 # SENSOR WORKER THREAD
