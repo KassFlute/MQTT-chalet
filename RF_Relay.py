@@ -1,4 +1,5 @@
 import logging
+import time
 
 from rpi_rf import RFDevice
 import RPi.GPIO as GPIO
@@ -12,10 +13,12 @@ class RFRelay:
     # ========================================================================
     # CONFIGURATION
     # ========================================================================
-    TX_REPEAT = 10
+    TX_REPEAT = 15  # Increased from 10 for better reliability
     PROTOCOL = 1
     PULSE_LENGTH = 350
     CODE_LENGTH = 24
+    NUM_TRANSMISSIONS = 5  # Send the code multiple times
+    TRANSMISSION_DELAY = 0.1  # Delay between transmissions (seconds)
 
     def __init__(self, pin, relays=None):
         """
@@ -79,14 +82,21 @@ class RFRelay:
         off_code = on_code + 1
 
         self._init_device()
-        if state.lower() == "on":
-            self.rfdevice.tx_code(on_code)
-            logger.debug(f"Relay '{relay_name}' turned ON (code: {on_code})")
-        elif state.lower() == "off":
-            self.rfdevice.tx_code(off_code)
-            logger.debug(f"Relay '{relay_name}' turned OFF (code: {off_code})")
-        else:
-            logger.error(f"Invalid state '{state}'. Use 'on' or 'off'")
+        
+        code = on_code if state.lower() == "on" else off_code
+        state_str = "ON" if state.lower() == "on" else "OFF"
+        
+        # Send the code multiple times for better reliability
+        for attempt in range(self.NUM_TRANSMISSIONS):
+            self.rfdevice.tx_code(code, self.PROTOCOL, self.PULSE_LENGTH, self.CODE_LENGTH)
+            logger.debug(f"Relay '{relay_name}' transmission {attempt + 1}/{self.NUM_TRANSMISSIONS} ({state_str}, code: {code})")
+            
+            # Add delay between transmissions (except after the last one)
+            if attempt < self.NUM_TRANSMISSIONS - 1:
+                time.sleep(self.TRANSMISSION_DELAY)
+        
+        logger.info(f"Relay '{relay_name}' turned {state_str} (code: {code})")
+
 
     def on(self, relay_name):
         """Turn a relay ON."""
