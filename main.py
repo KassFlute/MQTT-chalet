@@ -178,8 +178,8 @@ dht11Reader = DHT11Reader.DHT11Reader(DHT11_PIN)
 # Setup RF Relay
 logger.info("Initializing RF relay controller...")
 rf_relay = RF_Relay.RFRelay(relays={"mazout_outlet": 101}, pin=RF_PIN)
-rf_relay.off("mazout_outlet")
-mqttc.publish(RELAY_GET_TOPIC, "OFF", retain=True)
+# rf_relay.off("mazout_outlet")
+# mqttc.publish(RELAY_GET_TOPIC, "OFF", retain=True)
 
 # Start background sensor thread
 logger.info("Starting sensor read thread...")
