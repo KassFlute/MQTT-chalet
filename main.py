@@ -32,6 +32,7 @@ MQTT_PASS = config.MQTT_PASS
 TEMP_TOPIC = config.TEMP_TOPIC
 RELAY_SET_TOPIC = config.RELAY_SET_TOPIC
 RELAY_GET_TOPIC = config.RELAY_GET_TOPIC
+STATUS_TOPIC = config.STATUS_TOPIC
 
 # ============================================================================
 # HARDWARE CONFIGURATION (from config.py)
@@ -49,6 +50,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         logger.info(f"Connected to MQTT broker successfully (result code: {reason_code})")
         client.subscribe(RELAY_SET_TOPIC)
+        client.publish(STATUS_TOPIC, "online", qos=1, retain=True)
     else:
         logger.error(f"Failed to connect to MQTT broker with result code: {reason_code}")
 
@@ -160,6 +162,7 @@ mqttc.on_socket_connect_fail = on_socket_connect_fail
 mqttc.on_socket_close = on_socket_close
 mqttc.on_message = on_message
 mqttc.username_pw_set(MQTT_USER, MQTT_PASS)
+mqttc.will_set(STATUS_TOPIC, payload="offline", qos=1, retain=True) # Last Will and Testament (LWT) in case of disconnection
 
 try:
     logger.info(f"Attempting to connect to MQTT broker at {MQTT_HOST}:{MQTT_PORT}...")
@@ -221,6 +224,8 @@ except KeyboardInterrupt:
     logger.info("Keyboard interrupt received, shutting down...")
 finally:
     logger.info("Cleaning up resources...")
+    mqttc.publish(STATUS_TOPIC, "offline", qos=1, retain=True)
+    time.sleep(0.5)
     stop_event.set()
     sensor_thread.join(timeout=2)
     mqttc.loop_stop()
