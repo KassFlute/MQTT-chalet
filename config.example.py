@@ -9,8 +9,10 @@ MQTT_PASS = "your_mqtt_password"
 
 # MQTT Topics
 TEMP_TOPIC = "chalet/temperature"
+HUMIDITY_TOPIC = "chalet/humidity"
 RELAY_SET_TOPIC = "chalet/relay/set"
 RELAY_GET_TOPIC = "chalet/relay/get"
+STATUS_TOPIC = "chalet/status"
 
 # Hardware Configuration
 DHT11_PIN = 12  # GPIO pin for DHT11 sensor
