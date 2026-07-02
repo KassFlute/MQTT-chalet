@@ -71,6 +71,7 @@ Install and run Tailscale on the Raspberry Pi:
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 ```
+Don't forget to disable tailscale key expiry
 
 ## Home Assistant Integration
 
